@@ -1,0 +1,156 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f8fafc;
+}
+
+/* Layout */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: #ffffff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.brand {
+    font-weight: 600;
+    color: #111827;
+}
+
+.nav {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.nav a {
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    background: #e5e7eb;
+    color: #111827;
+}
+
+.nav a.active {
+    background: #3b82f6;
+    color: #ffffff;
+}
+
+.main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.section {
+    background: #ffffff;
+    margin: 1rem 0;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+h2 {
+    color: #1e293b;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+}
+
+h3 {
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+    font-size: 1.05rem;
+}
+
+/* Forms */
+.form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+input, select, button {
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+button {
+    background: #3b82f6;
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+button:hover {
+    background: #2563eb;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+th, td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #475569;
+}
+
+.positive {
+    color: #059669;
+    font-weight: 600;
+}
+
+.negative {
+    color: #dc2626;
+}
+
+/* Delivery multi items */
+.delivery-item {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+}
+
+.delivery-item button {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+    background: #ef4444;
+}
+
+.delivery-item button:hover {
+    background: #b91c1c;
+}
+
+@media (max-width: 900px) {
+    .delivery-item {
+        grid-template-columns: 1fr;
+    }
+}
+|
