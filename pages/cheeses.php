@@ -1,6 +1,8 @@
 <?php
 // Handle add / update / delete / toggle active
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $delete_error = null;
+
     if ($_POST['action'] === 'add_cheese') {
         $stmt = $pdo->prepare("
             INSERT INTO cheeses (name, cost_price, sell_price)
@@ -81,6 +83,14 @@ $cheeses = $pdo->query("
 
 <div class="section">
     <h2>📚 Cheeses & Prices</h2>
+    <?php if (!empty($delete_error)): ?>
+        <div style="margin-bottom:0.75rem;padding:0.6rem 0.8rem;
+                    border-radius:8px;background:#fef2f2;color:#b91c1c;
+                    border:1px solid #fecaca;font-size:0.9rem;">
+                    <?= htmlspecialchars($delete_error) ?>
+        </div>
+    <?php endif; ?>
+    
     <table>
     <thead>
     <tr>
