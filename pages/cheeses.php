@@ -73,8 +73,8 @@ $cheeses = $pdo->query("
     <form method="POST" class="form-grid">
         <input type="hidden" name="action" value="add_cheese">
         <input name="name" placeholder="Cheese name" required>
-        <input name="cost_price" type="number" step="0.01" placeholder="Cost per unit" required>
-        <input name="sell_price" type="number" step="0.01" placeholder="Sell price" required>
+        <input name="cost_price" type="number" step="1" placeholder="Cost per unit" required>
+        <input name="sell_price" type="number" step="1" placeholder="Sell price" required>
         <button type="submit">Add Cheese</button>
     </form>
 </div>
@@ -106,9 +106,9 @@ $cheeses = $pdo->query("
                 <form method="POST" style="display:inline-flex; gap:0.3rem; align-items:center;">
                     <input type="hidden" name="action" value="update_price">
                     <input type="hidden" name="cheese_id" value="<?= (int)$cheese['id'] ?>">
-                    <input type="number" name="cost_price" value="<?= htmlspecialchars($cheese['cost_price']) ?>" step="0.01" style="width:90px;">
+                    <input type="number" name="cost_price" value="<?= htmlspecialchars($cheese['cost_price']) ?>" step="1" style="width:90px;">
                     /
-                    <input type="number" name="sell_price" value="<?= htmlspecialchars($cheese['sell_price']) ?>" step="0.01" style="width:90px;">
+                    <input type="number" name="sell_price" value="<?= htmlspecialchars($cheese['sell_price']) ?>" step="1" style="width:90px;">
                     <button type="submit" style="padding:0.25rem 0.6rem; font-size:0.8rem;">Update</button>
                 </form>
             </td>
