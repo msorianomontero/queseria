@@ -1,8 +1,9 @@
-# Sistema administracion queseria
+# Sistema Administracion Queseria
 
-This is my first Git project!
+Sistema de inventarios de quesería
 
 ## What I'm Learning
-- Git basics
-- VSCode
-- Version control
+- Dashboard
+- Entregas
+- Ventas
+- Catálogo de quesos
