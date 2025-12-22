@@ -1,0 +1,46 @@
+-- Database (optional if already created)
+-- CREATE DATABASE IF NOT EXISTS cheese_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- USE cheese_db;
+
+CREATE TABLE IF NOT EXISTS cheeses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    cost_price DECIMAL(10,2) NOT NULL,
+    sell_price DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS stock (
+    cheese_id INT PRIMARY KEY,
+    units INT NOT NULL DEFAULT 0,
+    CONSTRAINT fk_stock_cheese FOREIGN KEY (cheese_id)
+        REFERENCES cheeses(id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS deliveries (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cheese_id INT NOT NULL,
+    units_received INT NOT NULL,
+    owed DECIMAL(10,2) NOT NULL,
+    paid DECIMAL(10,2) DEFAULT 0,
+    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_deliveries_cheese FOREIGN KEY (cheese_id)
+        REFERENCES cheeses(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS sales (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_name VARCHAR(100) NOT NULL,
+    cheese_id INT NOT NULL,
+    units_sold INT NOT NULL,
+    total DECIMAL(10,2) NOT NULL,
+    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_sales_cheese FOREIGN KEY (cheese_id)
+        REFERENCES cheeses(id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+);
