@@ -25,7 +25,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'delivery_mult
 
 // Cheeses for select
 $cheeses = $pdo->query("
-    SELECT id, name FROM cheeses ORDER BY name
+    SELECT id, name
+    FROM cheeses
+    WHERE active = 1
+    ORDER BY name
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 // Recent deliveries
