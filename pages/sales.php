@@ -1,30 +1,35 @@
 <?php
 // Handle sale
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if ($_POST['action'] === 'sale'){
-        
-        $cheese_id     = $_POST['cheese_id'];
+    if ($_POST['action'] === 'sale') {
+        $cheese_id = (int)$_POST['cheese_id'];
         $customer_name = $_POST['customer_name'];
-        $units_sold    = (int)$_POST['units_sold'];
-
-        // Get current sell price
-        $stmt = $pdo->prepare("SELECT sell_price FROM cheeses WHERE id = ?");
+        $units_sold = (int)$_POST['units_sold'];
+        
+        // Check available stock first
+        $stmt = $pdo->prepare("SELECT units FROM stock WHERE cheese_id = ?");
         $stmt->execute([$cheese_id]);
-        $sell_price = (float)$stmt->fetchColumn();
-
-        $total = $units_sold * $sell_price;
-
-        // Update stock
-        $pdo->prepare("UPDATE stock SET units = units - ? WHERE cheese_id = ?")
-            ->execute([$units_sold, $cheese_id]);
-
-        // Record sale
-        $stmt = $pdo->prepare("
-            INSERT INTO sales (customer_name, cheese_id, units_sold, total)
-            VALUES (?, ?, ?, ?)
-        ");
-        $stmt->execute([$customer_name, $cheese_id, $units_sold, $total]);
-
+        $available_stock = (int)$stmt->fetchColumn();
+        
+        if ($units_sold > $available_stock) {
+            $error = "Insufficient stock. Only {$available_stock} units available.";
+        } else {
+            // Get current sell price
+            $stmt = $pdo->prepare("SELECT sell_price FROM cheeses WHERE id = ?");
+            $stmt->execute([$cheese_id]);
+            $sell_price = (float)$stmt->fetchColumn();
+            $total = $units_sold * $sell_price;
+            
+            // Update stock
+            $pdo->prepare("UPDATE stock SET units = units - ? WHERE cheese_id = ?")
+                ->execute([$units_sold, $cheese_id]);
+            
+            // Record sale
+            $stmt = $pdo->prepare("INSERT INTO sales (customer_name, cheese_id, units_sold, total) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$customer_name, $cheese_id, $units_sold, $total]);
+            
+            $success = "Sale recorded successfully.";
+        }
     } elseif ($_POST['action'] === 'delete' && isset($_POST['sale_id'])) {
         $sale_id = (int)$_POST['sale_id'];
         // Fetch sale details to reverse stock
@@ -68,6 +73,13 @@ $recent_sales = $pdo->query("
 
 <div class="section">
     <h2>💰 Register Sale</h2>
+    <?php if (isset($error)): ?>
+        <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
+    <?php endif; ?>
+    <?php if (isset($success)): ?>
+        <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
+    <?php endif; ?>
+
     <form method="POST" class="form-grid">
         <input type="hidden" name="action" value="sale">
         <input name="customer_name" placeholder="Customer name" required>
