@@ -55,7 +55,7 @@ $recent_deliveries = $pdo->query("
                     <?php endforeach; ?>
                 </select>
                 <input name="items[0][units_received]" type="number" placeholder="Units" required>
-                <input name="items[0][owed]" type="number" step="0.01" placeholder="Owed" required>
+                <input name="items[0][owed]" type="number" step="1" placeholder="Owed" required>
                 <button type="button" onclick="removeItem(this)">❌</button>
             </div>
         </div>
