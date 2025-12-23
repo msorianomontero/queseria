@@ -41,8 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Or hard delete: 
             $pdo->prepare("DELETE FROM sales WHERE id = ?")->execute([$sale_id]);
         }
-        header('Location: sales.php');
-        exit;
+        //header('Location: sales.php');
+        //exit;
+        
     }   
 }
 
