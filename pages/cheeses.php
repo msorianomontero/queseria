@@ -129,9 +129,10 @@ $cheeses = $pdo->query("
                     <span class="negative">Inactive</span>
                 <?php endif; ?>
             </td>
-            <td style="display:flex; gap:0.25rem; flex-wrap:wrap;">
+            <td>
+            
                 <!-- Toggle active / inactive -->
-                <form method="POST">
+                <form method="POST" style="display:inline-flex; gap:0.3rem; align-items:center;">
                     <input type="hidden" name="action" value="toggle_active">
                     <input type="hidden" name="cheese_id" value="<?= (int)$cheese['id'] ?>">
                     <input type="hidden" name="new_status" 
@@ -142,7 +143,7 @@ $cheeses = $pdo->query("
                 </form>
 
                 <!-- Hard delete (blocked if referenced) -->
-                <form method="POST" onsubmit="return confirm('Delete this cheese? This cannot be undone.');">
+                <form method="POST" style="display:inline-flex; gap:0.3rem; align-items:center;"onsubmit="return confirm('Delete this cheese? This cannot be undone.');">
                     <input type="hidden" name="action" value="delete_cheese">
                     <input type="hidden" name="cheese_id" value="<?= (int)$cheese['id'] ?>">
                     <button type="submit" style="padding:0.25rem 0.6rem; font-size:0.8rem; background:#ef4444;">
