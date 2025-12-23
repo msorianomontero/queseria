@@ -1,28 +1,51 @@
 <?php
 // Handle sale
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'sale') {
-    $cheese_id     = $_POST['cheese_id'];
-    $customer_name = $_POST['customer_name'];
-    $units_sold    = (int)$_POST['units_sold'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($_POST['action'] === 'sale'){
+        
+        $cheese_id     = $_POST['cheese_id'];
+        $customer_name = $_POST['customer_name'];
+        $units_sold    = (int)$_POST['units_sold'];
 
-    // Get current sell price
-    $stmt = $pdo->prepare("SELECT sell_price FROM cheeses WHERE id = ?");
-    $stmt->execute([$cheese_id]);
-    $sell_price = (float)$stmt->fetchColumn();
+        // Get current sell price
+        $stmt = $pdo->prepare("SELECT sell_price FROM cheeses WHERE id = ?");
+        $stmt->execute([$cheese_id]);
+        $sell_price = (float)$stmt->fetchColumn();
 
-    $total = $units_sold * $sell_price;
+        $total = $units_sold * $sell_price;
 
-    // Update stock
-    $pdo->prepare("UPDATE stock SET units = units - ? WHERE cheese_id = ?")
-        ->execute([$units_sold, $cheese_id]);
+        // Update stock
+        $pdo->prepare("UPDATE stock SET units = units - ? WHERE cheese_id = ?")
+            ->execute([$units_sold, $cheese_id]);
 
-    // Record sale
-    $stmt = $pdo->prepare("
-        INSERT INTO sales (customer_name, cheese_id, units_sold, total)
-        VALUES (?, ?, ?, ?)
-    ");
-    $stmt->execute([$customer_name, $cheese_id, $units_sold, $total]);
+        // Record sale
+        $stmt = $pdo->prepare("
+            INSERT INTO sales (customer_name, cheese_id, units_sold, total)
+            VALUES (?, ?, ?, ?)
+        ");
+        $stmt->execute([$customer_name, $cheese_id, $units_sold, $total]);
+
+    } elseif ($_POST['action'] === 'delete' && isset($_POST['sale_id'])) {
+        $sale_id = (int)$_POST['sale_id'];
+        // Fetch sale details to reverse stock
+        $stmt = $pdo->prepare("SELECT cheese_id, units_sold FROM sales WHERE id = ?");
+        $stmt->execute([$sale_id]);
+        $sale = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($sale) {
+            // Restore stock
+            $pdo->prepare("UPDATE stock SET units = units + ? WHERE cheese_id = ?")
+                ->execute([$sale['units_sold'], $sale['cheese_id']]);
+            // Soft delete (preferred) - add deleted=1 column to sales table first
+            //$pdo->prepare("UPDATE sales SET deleted = 1 WHERE id = ?")->execute([$sale_id]);
+            // Or hard delete: 
+            $pdo->prepare("DELETE FROM sales WHERE id = ?")->execute([$sale_id]);
+        }
+        header('Location: sales.php');
+        exit;
+    }   
 }
+
 
 // Cheeses for select
 $cheeses = $pdo->query("
