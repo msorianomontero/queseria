@@ -35,6 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $pdo->prepare("UPDATE cheeses SET active = ? WHERE id = ?");
         $stmt->execute([$new_status, $cheese_id]);
 
+
+
+
     } elseif ($_POST['action'] === 'delete_cheese') {
         // Hard delete only if not used in deliveries or sales
         $cheese_id = (int)$_POST['cheese_id'];
@@ -42,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Count references in deliveries and sales
         $stmt = $pdo->prepare("
             SELECT 
-              (SELECT COUNT(*) FROM deliveries d WHERE d.cheese_id = ?) AS deliveries_count,
+              (SELECT COUNT(*) FROM del_detail dd WHERE dd.cheese_id = ?) AS deliveriescount,
               (SELECT COUNT(*) FROM sales s      WHERE s.cheese_id = ?) AS sales_count
         ");
         $stmt->execute([$cheese_id, $cheese_id]);
@@ -58,6 +61,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $delete_error = "Cannot delete: this cheese has deliveries or sales registered.";
         }
     }
+
+
+
 }
 
 // Reload cheeses
