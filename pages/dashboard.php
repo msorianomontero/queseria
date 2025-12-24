@@ -10,11 +10,15 @@ $cheeses = $pdo->query("
 
 // Recent deliveries and sales
 $recent_deliveries = $pdo->query("
-    SELECT d.*, c.name
-    FROM deliveries d
-    JOIN cheeses c ON d.cheese_id = c.id
-    ORDER BY d.date DESC
-    LIMIT 10
+    SELECT d.id, d.origin, d.date,
+           GROUP_CONCAT(c.name SEPARATOR ', ') as cheese_names,
+           SUM(dd.units_received) as total_units,
+           SUM(dd.owed - dd.paid) as balance_owed
+    FROM deliveries d 
+    JOIN del_detail dd ON d.id = dd.delivery_id 
+    JOIN cheeses c ON dd.cheese_id = c.id 
+    GROUP BY d.id 
+    ORDER BY d.date DESC LIMIT 10
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 $recent_sales = $pdo->query("
@@ -57,9 +61,10 @@ $recent_sales = $pdo->query("
             <h3>Latest Deliveries</h3>
             <?php foreach ($recent_deliveries as $delivery): ?>
                 <div style="padding: 0.5rem; background: #f8fafc; margin-bottom: 0.25rem; border-radius: 6px;">
-                    <?= htmlspecialchars($delivery['name']) ?>:
-                    +<?= (int)$delivery['units_received'] ?> units
-                    (owed: $<?= number_format($delivery['owed'], 2) ?>)
+                    <strong><?php echo htmlspecialchars($delivery['origin']); ?></strong> 
+                    <?php echo (int)$delivery['total_units']; ?> units 
+                    (<?php echo htmlspecialchars($delivery['cheese_names']); ?>)
+                    <br>Balance: <?php echo number_format($delivery['balance_owed'], 2); ?>
                 </div>
             <?php endforeach; ?>
         </div>
