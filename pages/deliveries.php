@@ -22,6 +22,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'delivery_mult
         }
     }
 }
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'delete_delivery') {
+    $delivery_id = (int)($_POST['delivery_id'] ?? 0);
+    if ($delivery_id > 0) {
+        // Get delivery details for reversal
+        $stmt = $pdo->prepare("SELECT cheese_id, units_received FROM deliveries WHERE id = ?");
+        $stmt->execute([$delivery_id]);
+        $delivery = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($delivery) {
+            $cheese_id = $delivery['cheese_id'];
+            $units_received = $delivery['units_received'];
+            
+            // Revert stock
+            $stmt = $pdo->prepare("UPDATE stock SET units = units - ? WHERE cheese_id = ?");
+            $stmt->execute([$units_received, $cheese_id]);
+            
+            // Delete delivery record
+            $stmt = $pdo->prepare("DELETE FROM deliveries WHERE id = ?");
+            $stmt->execute([$delivery_id]);
+        }
+    }
+    //header('Location: ' . $_SERVER['PHP_SELF']);
+    //exit;
+}
+
 
 // Cheeses for select
 $cheeses = $pdo->query("
@@ -69,25 +94,34 @@ $recent_deliveries = $pdo->query("
     <h2>📦 Recent Deliveries</h2>
     <table>
         <thead>
-        <tr>
-            <th>Date</th>
-            <th>Cheese</th>
-            <th>Units</th>
-            <th>Owed</th>
-        </tr>
+            <tr>
+                <th>Date</th>
+                <th>Cheese</th>
+                <th>Units</th>
+                <th>Owed</th>
+                <th>Action</th>
+            </tr>
         </thead>
         <tbody>
-        <?php foreach ($recent_deliveries as $delivery): ?>
+            <?php foreach ($recent_deliveries as $delivery): ?>
             <tr>
-                <td><?= htmlspecialchars($delivery['date']) ?></td>
-                <td><?= htmlspecialchars($delivery['name']) ?></td>
-                <td><?= (int)$delivery['units_received'] ?></td>
-                <td>$<?= number_format($delivery['owed'], 2) ?></td>
+                <td><?php echo htmlspecialchars($delivery['date']); ?></td>
+                <td><?php echo htmlspecialchars($delivery['name']); ?></td>
+                <td><?php echo (int)$delivery['units_received']; ?></td>
+                <td><?php echo number_format($delivery['owed'], 2); ?></td>
+                <td>
+                    <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this delivery? This will subtract units from stock.');">
+                        <input type="hidden" name="action" value="delete_delivery">
+                        <input type="hidden" name="delivery_id" value="<?php echo $delivery['id']; ?>">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </td>
             </tr>
-        <?php endforeach; ?>
+            <?php endforeach; ?>
         </tbody>
     </table>
 </div>
+
 
 <script>
 let itemCounter = 1;
