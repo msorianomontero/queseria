@@ -1,74 +1,69 @@
 <?php
-// Handle multi-cheese delivery
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if ($_POST['action'] === 'delivery_multi'){
-        if (!empty($_POST['items']) && is_array($_POST['items'])) {
+    if ($_POST['action'] === 'deliverymulti') {
+        $origin = $_POST['origin'] ?? '';
+        if (!empty($_POST['items']) && is_array($_POST['items']) && !empty($origin)) {
+            // Create master delivery record
+            $stmt = $pdo->prepare("INSERT INTO deliveries (origin) VALUES (?)");
+            $stmt->execute([$origin]);
+            $deliveryid = $pdo->lastInsertId();
+            
             foreach ($_POST['items'] as $item) {
-                $cheese_id      = $item['cheese_id'] ?? null;
-                $units_received = $item['units_received'] ?? null;
-                $owed           = $item['owed'] ?? 0;
-
-                if ($cheese_id && $units_received) {
+                $cheeseid = $item['cheeseid'] ?? null;
+                $unitsreceived = $item['unitsreceived'] ?? null;
+                $owed = $item['owed'] ?? 0;
+                if ($cheeseid && $unitsreceived) {
                     // Update stock
-                    $pdo->prepare("UPDATE stock SET units = units + ? WHERE cheese_id = ?")
-                        ->execute([$units_received, $cheese_id]);
-
-                    // Record delivery line
-                    $stmt = $pdo->prepare("
-                        INSERT INTO deliveries (cheese_id, units_received, owed)
-                        VALUES (?, ?, ?)
-                    ");
-                    $stmt->execute([$cheese_id, $units_received, $owed]);
+                    $stmt = $pdo->prepare("UPDATE stock SET units = units + ? WHERE cheeseid = ?");
+                    $stmt->execute([$unitsreceived, $cheeseid]);
+                    // Record detail line
+                    $stmt = $pdo->prepare("INSERT INTO del_detail (deliveryid, cheeseid, unitsreceived, owed) VALUES (?, ?, ?, ?)");
+                    $stmt->execute([$deliveryid, $cheeseid, $unitsreceived, $owed]);
                 }
             }
         }
-    } elseif ($_POST['action'] === 'delete_delivery') {
-        $delivery_id = (int)($_POST['delivery_id'] ?? 0);
-        if ($delivery_id > 0) {
-            // Get delivery details for reversal
-            $stmt = $pdo->prepare("SELECT cheese_id, units_received FROM deliveries WHERE id = ?");
-            $stmt->execute([$delivery_id]);
-            $delivery = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if ($delivery) {
-                $cheese_id = $delivery['cheese_id'];
-                $units_received = $delivery['units_received'];
-                
+    } elseif ($_POST['action'] === 'deletedelivery') {
+        $deliveryid = (int)($_POST['deliveryid'] ?? 0);
+        if ($deliveryid > 0) {
+            // Get detail lines for reversal
+            $stmt = $pdo->prepare("SELECT cheeseid, unitsreceived FROM del_detail WHERE deliveryid = ?");
+            $stmt->execute([$deliveryid]);
+            while ($detail = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 // Revert stock
-                $stmt = $pdo->prepare("UPDATE stock SET units = units - ? WHERE cheese_id = ?");
-                $stmt->execute([$units_received, $cheese_id]);
-                
-                // Delete delivery record
-                $stmt = $pdo->prepare("DELETE FROM deliveries WHERE id = ?");
-                $stmt->execute([$delivery_id]);
+                $stmt = $pdo->prepare("UPDATE stock SET units = units - ? WHERE cheeseid = ?");
+                $stmt->execute([$detail['unitsreceived'], $detail['cheeseid']]);
             }
+            // Delete cascades to details
+            $stmt = $pdo->prepare("DELETE FROM deliveries WHERE id = ?");
+            $stmt->execute([$deliveryid]);
         }
     }
 }
 
 // Cheeses for select
-$cheeses = $pdo->query("
-    SELECT id, name
-    FROM cheeses
-    WHERE active = 1
-    ORDER BY name
-")->fetchAll(PDO::FETCH_ASSOC);
+$cheeses = $pdo->query("SELECT id, name FROM cheeses WHERE active = 1 ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
 
-// Recent deliveries
-$recent_deliveries = $pdo->query("
-    SELECT d.*, c.name
-    FROM deliveries d
-    JOIN cheeses c ON d.cheese_id = c.id
-    ORDER BY d.date DESC
-    LIMIT 20
+// Recent deliveries (aggregated)
+$recentdeliveries = $pdo->query("
+    SELECT d.id, d.origin, d.date, 
+           GROUP_CONCAT(c.name SEPARATOR ', ') as cheeses, 
+           SUM(dd.unitsreceived) as totalunits, 
+           SUM(dd.owed) as totalowed 
+    FROM deliveries d 
+    JOIN del_detail dd ON d.id = dd.deliveryid 
+    JOIN cheeses c ON dd.cheeseid = c.id 
+    GROUP BY d.id 
+    ORDER BY d.date DESC LIMIT 20
 ")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
+
+
 <div class="section">
-    <h2>🚚 Register Delivery (Multiple Cheeses)</h2>
+    <h2> 🚚 Register Delivery (Multiple Cheeses)</h2>
     <form method="POST" id="deliveryForm" class="form-grid">
         <input type="hidden" name="action" value="delivery_multi">
-
+        <input type="text" name="origin" placeholder="Supplier/Origin" required style="grid-column: 1 / -1;">
         <div id="deliveryItems">
             <div class="delivery-item">
                 <select name="items[0][cheese_id]" required>
@@ -88,37 +83,33 @@ $recent_deliveries = $pdo->query("
     </form>
 </div>
 
+
+
 <div class="section">
     <h2>📦 Recent Deliveries</h2>
     <table>
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Cheese</th>
-                <th>Units</th>
-                <th>Owed</th>
-                <th>Action</th>
-            </tr>
-        </thead>
+        <thead><tr><th>Date</th><th>Origin</th><th>Cheeses</th><th>Total Units</th><th>Total Owed</th><th>Action</th></tr></thead>
         <tbody>
-            <?php foreach ($recent_deliveries as $delivery): ?>
+        <?php foreach ($recentdeliveries as $delivery): ?>
             <tr>
                 <td><?php echo htmlspecialchars($delivery['date']); ?></td>
-                <td><?php echo htmlspecialchars($delivery['name']); ?></td>
-                <td><?php echo (int)$delivery['units_received']; ?></td>
-                <td><?php echo number_format($delivery['owed'], 2); ?></td>
+                <td><?php echo htmlspecialchars($delivery['origin']); ?></td>
+                <td><?php echo htmlspecialchars($delivery['cheeses']); ?></td>
+                <td><?php echo (int)$delivery['totalunits']; ?></td>
+                <td><?php echo number_format($delivery['totalowed'], 2); ?></td>
                 <td>
                     <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this delivery? This will subtract units from stock.');">
-                        <input type="hidden" name="action" value="delete_delivery">
-                        <input type="hidden" name="delivery_id" value="<?php echo $delivery['id']; ?>">
+                        <input type="hidden" name="action" value="deletedelivery">
+                        <input type="hidden" name="deliveryid" value="<?php echo $delivery['id']; ?>">
                         <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                     </form>
                 </td>
             </tr>
-            <?php endforeach; ?>
+        <?php endforeach; ?>
         </tbody>
     </table>
 </div>
+
 
 
 <script>
