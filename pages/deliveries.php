@@ -1,52 +1,50 @@
 <?php
 // Handle multi-cheese delivery
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'delivery_multi') {
-    if (!empty($_POST['items']) && is_array($_POST['items'])) {
-        foreach ($_POST['items'] as $item) {
-            $cheese_id      = $item['cheese_id'] ?? null;
-            $units_received = $item['units_received'] ?? null;
-            $owed           = $item['owed'] ?? 0;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($_POST['action'] === 'delivery_multi'){
+        if (!empty($_POST['items']) && is_array($_POST['items'])) {
+            foreach ($_POST['items'] as $item) {
+                $cheese_id      = $item['cheese_id'] ?? null;
+                $units_received = $item['units_received'] ?? null;
+                $owed           = $item['owed'] ?? 0;
 
-            if ($cheese_id && $units_received) {
-                // Update stock
-                $pdo->prepare("UPDATE stock SET units = units + ? WHERE cheese_id = ?")
-                    ->execute([$units_received, $cheese_id]);
+                if ($cheese_id && $units_received) {
+                    // Update stock
+                    $pdo->prepare("UPDATE stock SET units = units + ? WHERE cheese_id = ?")
+                        ->execute([$units_received, $cheese_id]);
 
-                // Record delivery line
-                $stmt = $pdo->prepare("
-                    INSERT INTO deliveries (cheese_id, units_received, owed)
-                    VALUES (?, ?, ?)
-                ");
-                $stmt->execute([$cheese_id, $units_received, $owed]);
+                    // Record delivery line
+                    $stmt = $pdo->prepare("
+                        INSERT INTO deliveries (cheese_id, units_received, owed)
+                        VALUES (?, ?, ?)
+                    ");
+                    $stmt->execute([$cheese_id, $units_received, $owed]);
+                }
+            }
+        }
+    } elseif ($_POST['action'] === 'delete_delivery') {
+        $delivery_id = (int)($_POST['delivery_id'] ?? 0);
+        if ($delivery_id > 0) {
+            // Get delivery details for reversal
+            $stmt = $pdo->prepare("SELECT cheese_id, units_received FROM deliveries WHERE id = ?");
+            $stmt->execute([$delivery_id]);
+            $delivery = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($delivery) {
+                $cheese_id = $delivery['cheese_id'];
+                $units_received = $delivery['units_received'];
+                
+                // Revert stock
+                $stmt = $pdo->prepare("UPDATE stock SET units = units - ? WHERE cheese_id = ?");
+                $stmt->execute([$units_received, $cheese_id]);
+                
+                // Delete delivery record
+                $stmt = $pdo->prepare("DELETE FROM deliveries WHERE id = ?");
+                $stmt->execute([$delivery_id]);
             }
         }
     }
 }
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'delete_delivery') {
-    $delivery_id = (int)($_POST['delivery_id'] ?? 0);
-    if ($delivery_id > 0) {
-        // Get delivery details for reversal
-        $stmt = $pdo->prepare("SELECT cheese_id, units_received FROM deliveries WHERE id = ?");
-        $stmt->execute([$delivery_id]);
-        $delivery = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($delivery) {
-            $cheese_id = $delivery['cheese_id'];
-            $units_received = $delivery['units_received'];
-            
-            // Revert stock
-            $stmt = $pdo->prepare("UPDATE stock SET units = units - ? WHERE cheese_id = ?");
-            $stmt->execute([$units_received, $cheese_id]);
-            
-            // Delete delivery record
-            $stmt = $pdo->prepare("DELETE FROM deliveries WHERE id = ?");
-            $stmt->execute([$delivery_id]);
-        }
-    }
-    //header('Location: ' . $_SERVER['PHP_SELF']);
-    //exit;
-}
-
 
 // Cheeses for select
 $cheeses = $pdo->query("
