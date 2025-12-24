@@ -106,7 +106,7 @@ $recent_sales = $pdo->query("
                 <td><?= (int)$sale['units_sold'] ?></td>
                 <td>$<?= number_format($sale['total'], 2) ?></td>
                 <td>
-                    <form method="POST" style="display:inline;" onsubmit="return confirm('Reverse stock and delete this sale?');">
+                    <form method="POST" style="display:inline;" onsubmit="return confirm('Revertir stock and delete this sale?');">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="sale_id" value="<?= $sale['id'] ?>">
                         <button type="submit" class="btn-delete">Delete</button>
