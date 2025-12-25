@@ -1,6 +1,6 @@
 units_received<?php
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if ($_POST['action'] === 'deliverymulti') {
+    if ($_POST['action'] === 'delivery_multi') {
         $origin = $_POST['origin'] ?? '';
         if (!empty($_POST['items']) && is_array($_POST['items']) && !empty($origin)) {
             // Create master delivery record
@@ -30,8 +30,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$delivery_id]);
             while ($detail = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 // Revert stock
-                $stmt = $pdo->prepare("UPDATE stock SET units = units - ? WHERE cheese_id = ?");
-                $stmt->execute([$detail['units_received'], $detail['cheese_id']]);
+                
+                $errorCheeseId = $detail['cheese_id'];
+                $errorUnits = $detail['units_received'];
+                //echo "<script>alert('cheese_id: $errorCheeseId units:$errorUnits');</script>";
+                
+                $stmtUpdate = $pdo->prepare("UPDATE stock SET units = units - ? WHERE cheese_id = ?");
+                $stmtUpdate->execute([$detail['units_received'], $detail['cheese_id']]);
             }
             // Delete cascades to details
             $stmt = $pdo->prepare("DELETE FROM deliveries WHERE id = ?");
